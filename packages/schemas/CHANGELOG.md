@@ -1,5 +1,7 @@
 # Change Log
 
+## 1.41.1
+
 ## 1.41.0
 
 ### Minor Changes

@@ -1,5 +1,18 @@
 # Change Log
 
+## 1.41.1
+
+### Patch Changes
+
+- b560d17a4d: require the `identities` user scope to retrieve stored third-party provider access tokens through the Account API, matching the other social and enterprise SSO identity endpoints
+  - @logto/cli@1.41.1
+  - @logto/schemas@1.41.1
+  - @logto/account@0.5.0
+  - @logto/console@1.38.0
+  - @logto/demo-app@1.5.0
+  - @logto/device-demo-app@0.1.0
+  - @logto/experience@1.20.0
+
 ## 1.41.0
 
 ### Minor Changes
