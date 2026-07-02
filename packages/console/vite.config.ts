@@ -19,6 +19,7 @@ const buildConfig = (mode: string): UserConfig => ({
   base: `${process.env.CONSOLE_PUBLIC_URL ?? '/console'}`,
   envDir: '../../',
   server: {
+    host: true,
     port: 5002,
     hmr: {
       port: 6002,

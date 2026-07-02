@@ -7,6 +7,7 @@ import { defaultConfig } from '../../vite.shared.config';
 const buildConfig = (mode: string): UserConfig => ({
   base: '/device-demo-app',
   server: {
+    host: true,
     port: 5005,
     hmr: {
       port: 6005,
