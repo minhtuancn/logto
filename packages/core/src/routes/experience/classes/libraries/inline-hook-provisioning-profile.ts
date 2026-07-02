@@ -1,8 +1,8 @@
 import {
   hookProvisioningProfileGuard,
-  inlineHookUserDataNamespaceKey,
+  inlineHookLogtoConfigNamespaceKey,
   type HookProvisioningProfile,
-  type InlineHookUserData,
+  type InlineHookLogtoConfig,
   type JsonObject,
   type User,
 } from '@logto/schemas';
@@ -16,20 +16,32 @@ type HookProvisioningProfileWithMergedUserData = Omit<
 > &
   Partial<Pick<User, 'customData' | 'logtoConfig'>>;
 
-const hasInlineHookUserData = (
-  data: InlineHookUserData | undefined
-): data is Required<InlineHookUserData> => data?.[inlineHookUserDataNamespaceKey] !== undefined;
+const hasCustomDataPatch = (customData: JsonObject | undefined): customData is JsonObject =>
+  customData !== undefined && Object.keys(customData).length > 0;
 
-export const mergeInlineHookUserData = (
-  existingData: JsonObject,
-  inlineHookData: InlineHookUserData | undefined
-): JsonObject =>
-  hasInlineHookUserData(inlineHookData)
+const hasInlineHookLogtoConfig = (
+  logtoConfig: InlineHookLogtoConfig | undefined
+): logtoConfig is Required<InlineHookLogtoConfig> =>
+  logtoConfig?.[inlineHookLogtoConfigNamespaceKey] !== undefined;
+
+export const mergeCustomData = (existingData: JsonObject, customData?: JsonObject): JsonObject =>
+  hasCustomDataPatch(customData)
     ? {
         ...existingData,
-        [inlineHookUserDataNamespaceKey]: inlineHookData[inlineHookUserDataNamespaceKey],
+        ...customData,
       }
     : existingData;
+
+export const mergeInlineHookLogtoConfig = (
+  existingLogtoConfig: JsonObject,
+  logtoConfig: InlineHookLogtoConfig | undefined
+): JsonObject =>
+  hasInlineHookLogtoConfig(logtoConfig)
+    ? {
+        ...existingLogtoConfig,
+        [inlineHookLogtoConfigNamespaceKey]: logtoConfig[inlineHookLogtoConfigNamespaceKey],
+      }
+    : existingLogtoConfig;
 
 export const mergeInlineHookProvisioningProfileUserData = (
   existingUserData: Pick<User, 'customData' | 'logtoConfig'>,
@@ -39,11 +51,11 @@ export const mergeInlineHookProvisioningProfileUserData = (
 
   return {
     ...profile,
-    ...(hasInlineHookUserData(customData) && {
-      customData: mergeInlineHookUserData(existingUserData.customData, customData),
+    ...(hasCustomDataPatch(customData) && {
+      customData: mergeCustomData(existingUserData.customData, customData),
     }),
-    ...(hasInlineHookUserData(logtoConfig) && {
-      logtoConfig: mergeInlineHookUserData(existingUserData.logtoConfig, logtoConfig),
+    ...(hasInlineHookLogtoConfig(logtoConfig) && {
+      logtoConfig: mergeInlineHookLogtoConfig(existingUserData.logtoConfig, logtoConfig),
     }),
   };
 };

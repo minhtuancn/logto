@@ -6,8 +6,9 @@ import {
 import { ZodError } from 'zod';
 
 import {
+  mergeCustomData,
   mergeInlineHookProvisioningProfileUserData,
-  mergeInlineHookUserData,
+  mergeInlineHookLogtoConfig,
   toHookProvisioningProfile,
 } from './inline-hook-provisioning-profile.js';
 
@@ -24,9 +25,8 @@ describe('toHookProvisioningProfile', () => {
         familyName: 'Doe',
       },
       customData: {
-        inlineHook: {
-          plan: 'pro',
-        },
+        plan: 'pro',
+        upstreamId: 'user-1',
       },
       logtoConfig: {
         inlineHook: {
@@ -48,9 +48,8 @@ describe('toHookProvisioningProfile', () => {
         familyName: 'Doe',
       },
       customData: {
-        inlineHook: {
-          plan: 'pro',
-        },
+        plan: 'pro',
+        upstreamId: 'user-1',
       },
       logtoConfig: {
         inlineHook: {
@@ -88,15 +87,23 @@ describe('toHookProvisioningProfile', () => {
     ).toThrow(ZodError);
   });
 
-  it('rejects customData and logtoConfig writes outside the inlineHook namespace', () => {
-    expect(() =>
+  it('allows arbitrary customData without the inlineHook namespace', () => {
+    expect(
       toHookProvisioningProfile({
         customData: {
           plan: 'pro',
+          inlineHook: true,
         },
       })
-    ).toThrow(ZodError);
+    ).toEqual({
+      customData: {
+        plan: 'pro',
+        inlineHook: true,
+      },
+    });
+  });
 
+  it('rejects logtoConfig writes outside the inlineHook namespace', () => {
     expect(() =>
       toHookProvisioningProfile({
         logtoConfig: {
@@ -128,15 +135,7 @@ describe('toHookProvisioningProfile', () => {
     ).toThrow(ZodError);
   });
 
-  it('requires inlineHook namespace data to be an object', () => {
-    expect(() =>
-      toHookProvisioningProfile({
-        customData: {
-          inlineHook: true,
-        },
-      })
-    ).toThrow(ZodError);
-
+  it('requires logtoConfig.inlineHook data to be an object', () => {
     expect(() =>
       toHookProvisioningProfile({
         logtoConfig: {
@@ -161,48 +160,80 @@ describe('toHookProvisioningProfile', () => {
   });
 });
 
-describe('mergeInlineHookUserData', () => {
-  it('merges only the inlineHook namespace into existing data', () => {
+describe('mergeCustomData', () => {
+  it('shallow-merges customData into existing data', () => {
     expect(
-      mergeInlineHookUserData(
+      mergeCustomData(
         {
           source: 'registration',
-          inlineHook: {
-            oldPlan: 'free',
-          },
+          plan: 'free',
         },
         {
-          inlineHook: {
-            plan: 'pro',
-          },
+          plan: 'pro',
+          upstreamId: 'user-1',
         }
       )
     ).toEqual({
       source: 'registration',
-      inlineHook: {
-        plan: 'pro',
-      },
+      plan: 'pro',
+      upstreamId: 'user-1',
     });
   });
 
-  it('returns existing data when hook data does not include inlineHook', () => {
+  it('returns existing data when customData is missing or empty', () => {
     const existingData = {
       source: 'registration',
     };
 
-    expect(mergeInlineHookUserData(existingData, {})).toBe(existingData);
+    expect(mergeCustomData(existingData)).toBe(existingData);
+    expect(mergeCustomData(existingData, {})).toBe(existingData);
+  });
+});
+
+describe('mergeInlineHookLogtoConfig', () => {
+  it('merges only the inlineHook namespace into existing logtoConfig', () => {
+    expect(
+      mergeInlineHookLogtoConfig(
+        {
+          [userMfaDataKey]: {
+            enabled: true,
+          },
+          inlineHook: {
+            oldFlag: true,
+          },
+        },
+        {
+          inlineHook: {
+            acceptedTerms: true,
+          },
+        }
+      )
+    ).toEqual({
+      [userMfaDataKey]: {
+        enabled: true,
+      },
+      inlineHook: {
+        acceptedTerms: true,
+      },
+    });
+  });
+
+  it('returns existing logtoConfig when hook data does not include inlineHook', () => {
+    const existingData = {
+      source: 'registration',
+    };
+
+    expect(mergeInlineHookLogtoConfig(existingData, {})).toBe(existingData);
   });
 });
 
 describe('mergeInlineHookProvisioningProfileUserData', () => {
-  it('merges only inlineHook namespaced data and preserves existing top-level keys', () => {
+  it('shallow-merges customData and only merges logtoConfig.inlineHook', () => {
     const mergedProfile = mergeInlineHookProvisioningProfileUserData(
       {
         customData: {
           source: 'registration',
-          inlineHook: {
-            oldPlan: 'free',
-          },
+          plan: 'free',
         },
         logtoConfig: {
           [userMfaDataKey]: {
@@ -219,9 +250,8 @@ describe('mergeInlineHookProvisioningProfileUserData', () => {
       {
         name: 'Jane Doe',
         customData: {
-          inlineHook: {
-            plan: 'pro',
-          },
+          plan: 'pro',
+          upstreamId: 'user-1',
         },
         logtoConfig: {
           inlineHook: {
@@ -235,9 +265,8 @@ describe('mergeInlineHookProvisioningProfileUserData', () => {
       name: 'Jane Doe',
       customData: {
         source: 'registration',
-        inlineHook: {
-          plan: 'pro',
-        },
+        plan: 'pro',
+        upstreamId: 'user-1',
       },
       logtoConfig: {
         [userMfaDataKey]: {
@@ -253,7 +282,7 @@ describe('mergeInlineHookProvisioningProfileUserData', () => {
     });
   });
 
-  it('leaves user data fields out when hook data does not include inlineHook', () => {
+  it('leaves user data fields out when hook data has no effective patch', () => {
     const mergedProfile = mergeInlineHookProvisioningProfileUserData(
       {
         customData: {

@@ -47,17 +47,21 @@ export type InlineHookTestRequestBody = z.infer<typeof inlineHookTestRequestBody
 export type HookUser = Pick<
   UserInfo,
   'id' | 'username' | 'primaryEmail' | 'primaryPhone' | 'name' | 'avatar' | 'customData' | 'profile'
+> & {
+  logtoConfig?: InlineHookLogtoConfig;
+};
+
+export const inlineHookLogtoConfigNamespaceKey = 'inlineHook';
+
+export type InlineHookLogtoConfig = Partial<
+  Record<typeof inlineHookLogtoConfigNamespaceKey, JsonObject>
 >;
 
-export const inlineHookUserDataNamespaceKey = 'inlineHook';
-
-export type InlineHookUserData = Partial<Record<typeof inlineHookUserDataNamespaceKey, JsonObject>>;
-
-export const inlineHookUserDataGuard = z
+export const inlineHookLogtoConfigGuard = z
   .object({
-    [inlineHookUserDataNamespaceKey]: jsonObjectGuard.optional(),
+    [inlineHookLogtoConfigNamespaceKey]: jsonObjectGuard.optional(),
   })
-  .strict() satisfies z.ZodType<InlineHookUserData>;
+  .strict() satisfies z.ZodType<InlineHookLogtoConfig>;
 
 type HookProvisioningProfileBase = Partial<
   Pick<
@@ -79,8 +83,8 @@ export type HookProvisioningProfile = Omit<
   HookProvisioningProfileBase,
   'customData' | 'logtoConfig'
 > & {
-  customData?: InlineHookUserData;
-  logtoConfig?: InlineHookUserData;
+  customData?: JsonObject;
+  logtoConfig?: InlineHookLogtoConfig;
 };
 
 const hookProvisioningProfileBaseGuard = Users.createGuard
@@ -98,8 +102,8 @@ const hookProvisioningProfileBaseGuard = Users.createGuard
   })
   .extend({
     profile: userProfileGuard.optional(),
-    customData: inlineHookUserDataGuard.optional(),
-    logtoConfig: inlineHookUserDataGuard.optional(),
+    customData: jsonObjectGuard.optional(),
+    logtoConfig: inlineHookLogtoConfigGuard.optional(),
   })
   .strict();
 
